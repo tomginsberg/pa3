@@ -32,31 +32,86 @@ toqutree & toqutree::operator=(const toqutree & rhs){
 }
 
 toqutree::toqutree(PNG & imIn, int k){ 
+	/* This constructor grabs the 2^k x 2^k sub-image centered */
+	/* in imIn and uses it to build a quadtree. It may assume  */
+	/* that imIn is large enough to contain an image of that size. */
+	int dim = pow(2,k);
+	stats* stat = new stat(imIn);
 
-/* This constructor grabs the 2^k x 2^k sub-image centered */
-/* in imIn and uses it to build a quadtree. It may assume  */
-/* that imIn is large enough to contain an image of that size. */
+	pair<int,int> centre = findSplit(dim, stat);
+	pair<int,int> ul((centre.first - dim / 2) % dim, (centre.second - dim / 2) % dim);
+	pair<int,int> lr((centre.first + dim / 2 - 1) % dim, (centre.second + dim / 2 - 1) % dim);
+	root = new Node(centre, k, stat.getAvg(ul, lr));
 
-/* your code here */
+	delete stats;
+	stat = nullptr;
+
+	//Somehow build new PNGs that are stiched together from the 4 sub nodes
+	PNG* imNE = new PNG(); //@TODO how to make new PNGs
+	PNG* imNW = new PNG();
+	PNG* imSE = new PNG();
+	PNG* imSW = new PNG();
+
+	//Build the subtrees
+	root->NE = buildTree(&imNE, k-1);
+	delete imNE;
+	imNE = nullptr;
+
+	root->NW = buildTree(&imNW, k-1);
+	delete imNW;
+	imNW = nullptr;
+
+	root->SE = buildTree(&imSE, k-1);
+	delete imSE;
+	imSE = nullptr;
+
+	root->SW = buildTree(&imSW, k-1);
+	delete imSW;
+	imSW = nullptr;
+
 }
 
 int toqutree::size() {
-/* your code here */
+
 }
 
 
 toqutree::Node * toqutree::buildTree(PNG * im, int k) {
+	int dim = pow(2,k);
+	stats* stat = new stat(imIn);
 
-/* your code here */
+	pair<int,int> centre = findSplit(dim, stat);
+	pair<int,int> ul((centre.first - dim / 2) % dim, (centre.second - dim / 2) % dim);
+	pair<int,int> lr((centre.first + dim / 2 - 1) % dim, (centre.second + dim / 2 - 1) % dim);
+	Node* node = new Node(centre, k, stat.getAvg(ul, lr));
 
-// Note that you will want to practice careful memory use
-// In this function. We pass the dynamically allocated image
-// via pointer so that it may be released after it is used .
-// similarly, at each level of the tree you will want to 
-// declare a dynamically allocated stats object, and free it
-// once you've used it to choose a split point, and calculate
-// an average.
+	delete stats
+	stat = nullptr;
 
+	//Somehow build new PNGs that are stiched together from the 4 sub nodes
+	PNG imNE();
+	PNG imNW();
+	PNG imSE();
+	PNG imSW();
+
+	//Build the subtrees
+	root->NE = buildTree(&imNE, k-1);
+	delete imNE;
+	imNE = nullptr;
+
+	root->NW = buildTree(&imNW, k-1);
+	delete imNW;
+	imNW = nullptr;
+
+	root->SE = buildTree(&imSE, k-1);
+	delete imSE;
+	imSE = nullptr;
+
+	root->SW = buildTree(&imSW, k-1);
+	delete imSW;
+	imSW = nullptr;
+
+	return node;
 }
 
 PNG toqutree::render(){
@@ -85,7 +140,35 @@ void toqutree::clear(Node * & curr){
 /* called by assignment operator and copy constructor */
 toqutree::Node * toqutree::copy(const Node * other) {
 
-/* your code here */
 }
 
+pair<int,int> toqutree::findSplit(int dim, stats* stat) {
+	int newDim = dim / 2;
+	double minEntropy = 10000;
+	pair<int,int> centre;
 
+	for (int i = newDim / 2; i < newDim / 2 + newDim - 1; i++) {
+		for (int j = newDim / 2; j < newDim / 2 + newDim - 1; j++) {
+			pair<int, int> seul(i,j);
+			pair<int,int> selr((i+newDim-1)%dim,(j+newDim-1)%dim);
+
+			pair<int,int> neul(i,(j+newDim)%dim);
+			pair<int,int> nelr((i+newDim-1)%dim,(j+2*newDim-1)%dim);
+
+			pair<int,int> swul((i+newDim)%dim,j);
+			pair<int,int> swlr((i+2*newDim-1)%dim,(j+newDim-1)%dim);
+
+			pair<int,int> nwul((i+newDim)%dim,(j+newDim)%dim);
+			pair<int,int> nwlr((i+2*newDim-1)%dim,(j+2*newDim-1)%dim);
+
+			double avgEntropy = (stat->entropy(seul, selr) + stat->entropy(neul, nelr) + stat->entropy(swul, swlr) + stat->entropy(nwul, nwlr)) / 4.0;
+
+			if (avgEntropy < minEntropy) {
+				minEntropy = avgEntropy;
+				centre(i,j);
+			}
+		}
+	}
+
+	return centre;
+}

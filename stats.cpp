@@ -7,8 +7,8 @@ stats::stats(PNG & im){
 	vector<int> origHist(36, 0); //Vector of 36 zeros
 	origHist[(int)origin->h / 10] = 1;
 	hist[0][0] = origHist;
-	sumHueX[0][0] = origin->s * cos(origin->h);
-	sumHueY[0][0] = origin->s * sin(origin->h);
+	sumHueX[0][0] = origin->s * cos(origin->h * PI / 180);
+	sumHueY[0][0] = origin->s * sin(origin->h * PI / 180);
 	sumLum[0][0] = origin->l;
 	sumSat[0][0] = origin->s;
 
@@ -20,8 +20,8 @@ stats::stats(PNG & im){
 				lst.push_back(hist[0][row-1][i]);
 		lst[(int)px->h / 10]++;
 		hist[0][row] = lst;
-		sumHueX[0][row] = sumHueX[0][row-1] + px->s * cos(px->h);
-		sumHueY[0][row] = sumHueY[0][row-1] + px->s * sin(px->h);
+		sumHueX[0][row] = sumHueX[0][row-1] + px->s * cos(px->h * PI / 180);
+		sumHueY[0][row] = sumHueY[0][row-1] + px->s * sin(px->h * PI / 180);
 		sumLum[0][row] = sumLum[0][row-1] + px->l;
 		sumSat[0][row] = sumSat[0][row-1] + px->s;
 	} 
@@ -34,8 +34,8 @@ stats::stats(PNG & im){
 				lst.push_back(hist[col-1][0][i]);
 		lst[(int)px->h / 10]++;
 		hist[col][0] = lst;
-		sumHueX[col][0] = sumHueX[col-1][0] + px->s * cos(px->h);
-		sumHueY[col][0] = sumHueY[col-1][0] + px->s * sin(px->h);
+		sumHueX[col][0] = sumHueX[col-1][0] + px->s * cos(px->h * PI / 180);
+		sumHueY[col][0] = sumHueY[col-1][0] + px->s * sin(px->h * PI / 180);
 		sumLum[col][0] = sumLum[col-1][0] + px->l;
 		sumSat[col][0] = sumSat[col-1][0] + px->s;
 	}	
@@ -48,8 +48,8 @@ stats::stats(PNG & im){
 			for (int i = 1; i < 36; i++) 
 				lst.push_back(hist[col][row-1][i] + hist[col-1][row][i] - hist[col-1][row-1][i]);
 			lst[(int)px->h / 10]++;
-			sumHueX[col][row] = sumHueX[col][row-1] + sumHueX[col-1][row] - sumHueX[col-1][row-1] + px->s * cos(px->h);
-			sumHueY[col][row] = sumHueY[col][row-1] + sumHueY[col-1][row] - sumHueY[col-1][row-1] + px->s * sin(px->h);
+			sumHueX[col][row] = sumHueX[col][row-1] + sumHueX[col-1][row] - sumHueX[col-1][row-1] + px->s * cos(px->h * PI / 180);
+			sumHueY[col][row] = sumHueY[col][row-1] + sumHueY[col-1][row] - sumHueY[col-1][row-1] + px->s * sin(px->h * PI / 180);
 			sumLum[col][row] =  sumLum[col][row-1] + sumLum[col-1][row] - sumLum[col-1][row-1] + px->l;
 			sumSat[col][row] =  sumSat[col][row-1] + sumSat[col-1][row] - sumSat[col-1][row-1] + px->s;
 		}
@@ -197,7 +197,11 @@ HSLAPixel stats::getAvg(pair<int,int> ul, pair<int,int> lr){
 			avgl = (sumLum[lrx][lry] - sumLum[lrx][uly-1] - sumLum[ulx-1][lry] + sumLum[ulx][uly]) / area;
 		}
 	}
-	return HSLAPixel(atan2( avghy * (PI / 180), avghx ), avgs, avgl, 1.0);
+
+	double hue = atan2( avghy * (PI / 180), avghx );
+	while ( hue < 0 ) hue += 360;
+
+	return HSLAPixel(hue, avgs, avgl, 1.0);
 }
 
 //Fully compatible with rectangles that wrap around and do weird stuff

@@ -102,7 +102,7 @@ public:
     * Every leaf in the tree corresponds to a pixel in the PNG.
     * Every non-leaf node corresponds to a square of pixels 
     * which may not be contiguous in the original PNG, due to .
-    * the splittingg procedure we've chosen. In addition, the Node
+    * the splitting procedure we've chosen. In addition, the Node
     * stores a pixel representing the average color over the 
     * portion of the image it represents.
     *
@@ -189,6 +189,7 @@ private:
    */
    Node * buildTree(PNG * im, int k);
 
+   pair<int,int> findSplit(Node * node);
    /* =================== end of private PA3 functions ============== */
 };
 
