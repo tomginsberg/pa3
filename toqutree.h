@@ -45,7 +45,7 @@ private:
 
       Node(pair<int,int> ctr, int dim, HSLAPixel a);
 
-        pair<int,int> center; // optimal splitting position 
+        pair<int,int> center; // centre of the square (or optimal splitting position?)
         int dimension; // node represents a square, 2^dim x 2^dim in size
         HSLAPixel avg; // average color over square
 
@@ -190,6 +190,10 @@ private:
    Node * buildTree(PNG * im, int k);
 
    pair<int,int> findSplit(Node * node);
+
+   //Since PNG only offers a crop function that keeps a rectangle in the top left corner of the image,
+  //Move all the pixels from the region of interest to the top left corner and then crop
+   PNG* makePNG(pair<int,int> ul, pair<int,int> lr, PNG & im);
    /* =================== end of private PA3 functions ============== */
 };
 
