@@ -49,6 +49,10 @@ toqutree::toqutree(PNG & imIn, int k){
 
 	//Create the root node
 	root = new Node(centre, k, stat.getAvg(ul, lr));
+	pair<int,int> ulRel(0,0);
+	pair<int,int> lrRel(dim-1, dim-1);
+	root->ul = ulRel;
+	root->lr = lrRel;
 
 	delete stat;
 	stat = nullptr;
@@ -83,11 +87,21 @@ toqutree::toqutree(PNG & imIn, int k){
 }
 
 int toqutree::size() {
-
+	return size(root);
+}
+int toqutree::size(Node* node) {
+	if (node == nullptr) return 0;
+	return size(node->NE) + size(node->NW) + size(node->SE) + size(node->SW) + 1;
 }
 
 
 toqutree::Node * toqutree::buildTree(PNG * im, int k) {
+	//base case:
+	if (k == 0) {
+		Node* node = new Node(pair<int,int>(0,0), 0, im.getPixel(0,0));
+		return node;
+	}
+
 	int dim = pow(2,k);
 	int newDim = dim / 2;
 	stats* stat = new stat(im);
@@ -96,6 +110,8 @@ toqutree::Node * toqutree::buildTree(PNG * im, int k) {
 	pair<int,int> ul((centre.first - newDim) % dim, (centre.second - newDim) % dim);
 	pair<int,int> lr((centre.first + newDim - 1) % dim, (centre.second + newDim - 1) % dim);
 	Node* node = new Node(centre, k, stat.getAvg(ul, lr));
+	node.ul = ul;
+	node.lr = lr;
 
 	delete stat
 	stat = nullptr;
@@ -142,31 +158,124 @@ toqutree::Node * toqutree::buildTree(PNG * im, int k) {
 }
 
 PNG toqutree::render(){
-
 // My algorithm for this problem included a helper function
 // that was analogous to Find in a BST, but it navigated the 
 // quadtree, instead.
-
-/* your code here */
-
+	int size = pow(2,root->dimension);
+	PNG im(size, size);
+	render_helper(root, im);
+	return im;
 }
 
-/* oops, i left the implementation of this one in the file! */
+void toqutree::render_helper(Node* node, PNG & im) {
+	//Check if it is a leaf - this is a complete tree so if one child is null, they all are
+	if (node->NE == nullptr) {
+		int width = abs(node->lr->first - node->ul->first + 1);
+		int height = abs(node->lr->second - node->ul->second + 1);
+
+		for (int i = node->ul->first; i < node->ul->first + width; i++) {
+			int x = i % pow(2, node->dimension); 
+			for (int j = node->ul->second; j < node->ul->second + height; j++) {
+				int y = j % pow(2, node->dimension);
+				*im.getPixel(x, y) = node->avg;
+			}
+		}
+	} else {
+		render_helper(node->NE,im);
+		render_helper(node->NW,im);
+		render_helper(node->SE,im);
+		render_helper(node->SW,im);
+	}
+}
+
 void toqutree::prune(double tol){
+	prune_helper(root,tol);
+}
 
-	prune(root,tol);
+bool toqutree::prune_helper(Node* node, double tol) {
+	if (node == nullptr or node->NE == nullptr) return false;
 
+	//Before pruning it is safe to assume if a node has NE, then it also has the other 3 children
+	bool pne = false;
+	bool pnw = false;
+	bool pse = false;
+	bool psw = false;
+	if (node->NE->NE != nullptr) {
+		pne = prune_helper(node->NE, tol);
+		pnw = prune_helper(node->NW, tol);
+		pse = prune_helper(node->SE, tol);
+		psw = prune_helper(node->SW, tol);
+	} else { //The children are leaves
+		HSLAPixel* a = node->avg;
+		//If the children (all of which are leaves) are all within tolerance, delete them all
+		if ((node->NE->avg->h - a->h) < tol and (node->NW->avg->h - a->h) < tol and (node->SE->avg->h - a->h) < tol and (node->SW->avg->h - a->h) < tol) {
+			delete node->NE;
+			delete node->NW;
+			delete node->SE;
+			delete node->SW;
+
+			node->NE = nullptr;
+			node->NW = nullptr;
+			node->SE = nullptr;
+			node->SW = nullptr;
+			return true;
+		}
+		return false;
+	}
+
+	//On the way back out, check if node's children are now leaves
+	if (pne and pnw and pse and psw) {
+		if ((node->NE->avg->h - a->h) < tol and (node->NW->avg->h - a->h) < tol and (node->SE->avg->h - a->h) < tol and (node->SW->avg->h - a->h) < tol) {
+			delete node->NE;
+			delete node->NW;
+			delete node->SE;
+			delete node->SW;
+
+			node->NE = nullptr;
+			node->NW = nullptr;
+			node->SE = nullptr;
+			node->SW = nullptr;
+			return true;
+		}
+		return false;
+	}
 }
 
 /* called by destructor and assignment operator*/
 void toqutree::clear(Node * & curr){
-/* your code here */
+	if (curr == nullptr) return;
+
+	if (node->NE != nullptr)
+		clear(node->NE);
+	if (node->NW != nullptr)
+		clear(node->NW);
+	if (node->SE != nullptr)
+		clear(node->SE);
+	if (node->SW != nullptr)
+		clear(node->SW);
+	if (node->NE == nullptr and node->NW == nullptr and node->SE == nullptr and node->SW == nullptr) {
+		delete node;
+		node = nullptr;
+	}
 }
 
-/* done */
 /* called by assignment operator and copy constructor */
 toqutree::Node * toqutree::copy(const Node * other) {
+	this->root = new Node(other->root->centre, other->root->dimension, other->root->avg);
+	this->root->NE = copy_helper(other->root->NE);
+	this->root->NW = copy_helper(other->root->NW);
+	this->root->SE = copy_helper(other->root->SE);
+	this->root->SW = copy_helper(other->root->SW);
+}
 
+Node* toqutree::copy_helper(Node* curr) {
+	if (curr == nullptr) return nullptr;
+	Node* node = new Node(curr->centre, curr->dimension, curr->avg);
+	node->NE = copy_helper(curr->NE);
+	node->NW = copy_helper(curr->NW);
+	node->SE = copy_helper(curr->SE);
+	node->SW = copy_helper(curr->SW);
+	return node;
 }
 
 pair<int,int> toqutree::findSplit(int dim, stats* stat) {
@@ -213,9 +322,9 @@ PNG* toqutree::makePNG(pair<int,int> ul, pair<int,int> lr, PNG* im) {
 	int icount = 0;
 	int jcount = 0;
 	//Mod operators important here since region of interest may wrap around image boundaries
-	for (int i = ul.first; i < ul.first + subImWidth - 1; i++) {
+	for (int i = ul.first; i < ul.first + subImWidth; i++) {
 		int col = i % width;
-		for (int j = ul.second; j < ul.second + subImHeight - 1; j++) {
+		for (int j = ul.second; j < ul.second + subImHeight; j++) {
 			int row = j % height;
 			HSLAPixel * newPos = newIm->getPixel(icount, jcount);
 			HSLAPixel * oldPos = im->getPixel(col, row);

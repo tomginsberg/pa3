@@ -45,15 +45,16 @@ private:
 
       Node(pair<int,int> ctr, int dim, HSLAPixel a);
 
-        pair<int,int> center; // centre of the square (or optimal splitting position?)
+        pair<int,int> centre; // centre of the square (or optimal splitting position?)
         int dimension; // node represents a square, 2^dim x 2^dim in size
         HSLAPixel avg; // average color over square
+        pair<int,int> ul;
+        pair<int,int> lr;
 
       Node * NW; // left top child 
       Node * NE; // right top child 
       Node * SE; // right bottom child
       Node * SW; // left bottom child 
-      
    };
 	
    
@@ -132,7 +133,7 @@ public:
     * average color stored in the node.
     */
    PNG render();
-
+   void render_helper(Node* node, PNG & im);
    /*
     *  Prune function trims subtrees as high as possible in the tree.
     *  A subtree is pruned (cleared) if ALL of the subtree's leaves are within 
@@ -143,11 +144,15 @@ public:
    * You may want a recursive helper function for this one.
     */
    void prune(double tol);
+   //Recursive helper fnct
+   //Returns true if subtree was pruned and is now a leaf
+   bool prune_helper(Node* node, double tol);
 
     /* returns the number of nodes in the current toqutree. primarily used
      * for debugging and testing.
      */
     int size();
+    int size(Node* node);
 
    /* =============== end of public PA3 FUNCTIONS =========================*/
 
@@ -194,6 +199,7 @@ private:
    //Since PNG only offers a crop function that keeps a rectangle in the top left corner of the image,
   //Move all the pixels from the region of interest to the top left corner and then crop
    PNG* makePNG(pair<int,int> ul, pair<int,int> lr, PNG & im);
+   Node* copy_helper(Node* node);
    /* =================== end of private PA3 functions ============== */
 };
 
