@@ -50,7 +50,7 @@ toqutree::toqutree(PNG & imIn, int k){
 	//Create the root node
 	root = new Node(centre, k, stat.getAvg(ul, lr));
 
-	delete stats;
+	delete stat;
 	stat = nullptr;
 
 	//Get 2^k x 2^k subimage centred in imIn
@@ -97,7 +97,7 @@ toqutree::Node * toqutree::buildTree(PNG * im, int k) {
 	pair<int,int> lr((centre.first + newDim - 1) % dim, (centre.second + newDim - 1) % dim);
 	Node* node = new Node(centre, k, stat.getAvg(ul, lr));
 
-	delete stats
+	delete stat
 	stat = nullptr;
 
 	//Find corners of all 4 child nodes
