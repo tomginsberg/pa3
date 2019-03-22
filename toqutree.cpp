@@ -48,7 +48,7 @@ toqutree::toqutree(PNG & imIn, int k){
 	pair<int,int> centre = findSplit(dim, stat);
 
 	//Create the root node
-	root = new Node(centre, k, stat.getAvg(ul, lr));
+	root = new Node(centre, k, stat->getAvg(ul, lr));
 	pair<int,int> ulRel(0,0);
 	pair<int,int> lrRel(dim-1, dim-1);
 	root->ul = ulRel;
@@ -125,7 +125,7 @@ toqutree::Node * toqutree::buildTree(PNG * im, int k) {
 	pair<int,int> centre = findSplit(dim, stat);
 	pair<int,int> ul((centre.first - newDim) % dim, (centre.second - newDim) % dim);
 	pair<int,int> lr((centre.first + newDim - 1) % dim, (centre.second + newDim - 1) % dim);
-	Node* node = new Node(centre, k, stat.getAvg(ul, lr));
+	Node* node = new Node(centre, k, stat->getAvg(ul, lr));
 	node->ul = ul;
 	node->lr = lr;
 
@@ -254,6 +254,7 @@ bool toqutree::prune_helper(Node* node, double tol) {
 		}
 		return false;
 	}
+    return false;
 }
 
 /* called by destructor and assignment operator*/
@@ -281,6 +282,7 @@ toqutree::Node * toqutree::copy(const Node * other) {
 	this->root->NW = copy_helper(other->NW);
 	this->root->SE = copy_helper(other->SE);
 	this->root->SW = copy_helper(other->SW);
+    return root;
 }
 
 toqutree::Node* toqutree::copy_helper(Node* curr) {
