@@ -275,7 +275,7 @@ double stats::entropy(vector<int> & distn, int area){
 double stats::entropy(pair<int,int> ul, pair<int,int> lr){
 	double entropy = 0.0;
 	vector<int> rectHist = buildHist(ul, lr);
-	int numPx = rectArea(ul, lr);
+	long numPx = rectArea(ul, lr);
 
 	for (int i = 0; i < 36; i++) {
 		if (rectHist[i] > 0)

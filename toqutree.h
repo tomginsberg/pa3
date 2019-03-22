@@ -194,11 +194,11 @@ private:
    */
    Node * buildTree(PNG * im, int k);
 
-   pair<int,int> findSplit(Node * node);
+   pair<int,int> findSplit(int dim, stats* stat);
 
    //Since PNG only offers a crop function that keeps a rectangle in the top left corner of the image,
   //Move all the pixels from the region of interest to the top left corner and then crop
-   PNG* makePNG(pair<int,int> ul, pair<int,int> lr, PNG & im);
+   PNG* makePNG(pair<int,int> ul, pair<int,int> lr, PNG * im);
    Node* copy_helper(Node* node);
    /* =================== end of private PA3 functions ============== */
 };
