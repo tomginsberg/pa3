@@ -82,7 +82,7 @@ HSLAPixel stats::getAvg(pair<int,int> ul, pair<int,int> lr){
     int width = hist.size();
     int height = hist[0].size();
 
-    long area = rectArea(ul, lr);
+    double area = (double)rectArea(ul, lr);
     double avghx;
     double avghy;
     double avgs;
@@ -201,10 +201,10 @@ HSLAPixel stats::getAvg(pair<int,int> ul, pair<int,int> lr){
             avgs = (sumSat[lrx][lry] - sumSat[ulx-1][lry]) / area;
             avgl = (sumLum[lrx][lry] - sumLum[ulx-1][lry]) / area;
         } else { //Rectangle floating in image
-            avghx = (sumHueX[lrx][lry] - sumHueX[lrx][uly-1] - sumHueX[ulx-1][lry] + sumHueX[ulx][uly]) / area;
-            avghy = (sumHueY[lrx][lry] - sumHueY[lrx][uly-1] - sumHueY[ulx-1][lry] + sumHueY[ulx][uly]) / area;
-            avgs = (sumSat[lrx][lry] - sumSat[lrx][uly-1] - sumSat[ulx-1][lry] + sumSat[ulx][uly]) / area;
-            avgl = (sumLum[lrx][lry] - sumLum[lrx][uly-1] - sumLum[ulx-1][lry] + sumLum[ulx][uly]) / area;
+            avghx = (sumHueX[lrx][lry] - sumHueX[lrx][uly-1] - sumHueX[ulx-1][lry] + sumHueX[ulx-1][uly-1]) / area;
+            avghy = (sumHueY[lrx][lry] - sumHueY[lrx][uly-1] - sumHueY[ulx-1][lry] + sumHueY[ulx-1][uly-1]) / area;
+            avgs = (sumSat[lrx][lry] - sumSat[lrx][uly-1] - sumSat[ulx-1][lry] + sumSat[ulx-1][uly-1]) / area;
+            avgl = (sumLum[lrx][lry] - sumLum[lrx][uly-1] - sumLum[ulx-1][lry] + sumLum[ulx-1][uly-1]) / area;
         }
     }
 
@@ -259,7 +259,7 @@ vector<int> stats::buildHist(pair<int,int> ul, pair<int,int> lr){
                 lst[i] = hist[lrx][lry][i] - hist[ulx-1][lry][i];
         } else {
             for (int i = 0; i < 36; i++) {
-                lst[i] = hist[lrx][lry][i] - hist[lrx][uly-1][i] - hist[ulx-1][lry][i] + hist[ulx][uly][i];
+                lst[i] = hist[lrx][lry][i] - hist[lrx][uly-1][i] - hist[ulx-1][lry][i] + hist[ulx-1][uly-1][i];
             }
         }
     }
@@ -283,14 +283,8 @@ double stats::entropy(vector<int> & distn, int area){
 }
 
 double stats::entropy(pair<int,int> ul, pair<int,int> lr){
-    double entropy = 0.0;
     vector<int> rectHist = buildHist(ul, lr);
     long numPx = rectArea(ul, lr);
 
-    for (int i = 0; i < 36; i++) {
-        if (rectHist[i] > 0)
-            entropy -= ((double)rectHist[i] / (double)numPx) * log2((double)rectHist[i] / (double)numPx);
-    }
-
-    return entropy;
+    return entropy(rectHist, numPx);
 }

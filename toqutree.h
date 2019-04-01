@@ -199,8 +199,9 @@ private:
     //Recursive helper fnct
     //Returns true if subtree was pruned and is now a leaf
     bool prune_helper(Node*& node, double tol);
-    PNG* render_helper(Node* node);
-    void stitch(pair<int,int> ul, int dim, PNG* childIm, PNG*& parentIm);
+//    bool shouldPrune(Node*& node, double tol, HSLAPixel& avg);
+    PNG render_helper(Node* node);
+    void stitch(pair<int,int> ul, int dim, PNG& childIm, PNG& parentIm);
     /* =================== end of private PA3 functions ============== */
 };
 

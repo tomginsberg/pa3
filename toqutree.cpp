@@ -41,7 +41,7 @@ toqutree::toqutree(PNG & imIn, int k){
     int centrex = imIn.width() / 2;
     int centrey = imIn.height() / 2;
     pair<int,int> ul(centrex - dim / 2, centrey - dim / 2);
-    pair<int,int> lr(centrex + dim / 2 - 1, centrey + dim / 2 - 1);
+    pair<int,int> lr(ul.first + dim - 1, ul.second + dim - 1);
 
     //Get 2^k x 2^k subimage centred in imIn
     PNG* rootIm = makePNG(ul,lr,&imIn);
@@ -58,46 +58,55 @@ toqutree::toqutree(PNG & imIn, int k){
     stat = nullptr;
 
     //Make children
-    int newDim = dim / 2;
-    int i = centre.first;
-    int j = centre.second;
-    pair<int, int> seul(i,j);
-    pair<int,int> selr((i+newDim-1)%dim,(j+newDim-1)%dim);
+    if (k > 0) {
+        int newDim = dim / 2;
+        int i = centre.first;
+        int j = centre.second;
+        pair<int, int> seul(i, j);
+        pair<int, int> selr((i + newDim - 1) % dim, (j + newDim - 1) % dim);
 
-    pair<int,int> neul(i,(j+newDim)%dim);
-    pair<int,int> nelr((i+newDim-1)%dim,(j+dim-1)%dim);
+        pair<int, int> neul(i, (j + newDim) % dim);
+        pair<int, int> nelr((i + newDim - 1) % dim, (j + dim - 1) % dim);
 
-    pair<int,int> swul((i+newDim)%dim,j);
-    pair<int,int> swlr((i+dim-1)%dim,(j+newDim-1)%dim);
+        pair<int, int> swul((i + newDim) % dim, j);
+        pair<int, int> swlr((i + dim - 1) % dim, (j + newDim - 1) % dim);
 
-    pair<int,int> nwul((i+newDim)%dim,(j+newDim)%dim);
-    pair<int,int> nwlr((i+dim-1)%dim,(j+dim-1)%dim);
+        pair<int, int> nwul((i + newDim) % dim, (j + newDim) % dim);
+        pair<int, int> nwlr((i + dim - 1) % dim, (j + dim - 1) % dim);
 
-    //Build new PNGs that are stiched together from the 4 sub nodes
-    PNG* imNE = makePNG(neul, nelr, rootIm);
-    PNG* imNW = makePNG(nwul, nwlr, rootIm);
-    PNG* imSE = makePNG(seul, selr, rootIm);
-    PNG* imSW = makePNG(swul, swlr, rootIm);
+        //Build new PNGs that are stiched together from the 4 sub nodes
+        PNG *imNE = makePNG(neul, nelr, rootIm);
+        PNG *imNW = makePNG(nwul, nwlr, rootIm);
+        PNG *imSE = makePNG(seul, selr, rootIm);
+        PNG *imSW = makePNG(swul, swlr, rootIm);
 
-    delete rootIm;
-    rootIm = nullptr;
+        delete rootIm;
+        rootIm = nullptr;
 
-    //Build the subtrees
-    root->NE = this->buildTree(imNE, k-1);
-    delete imNE;
-    imNE = nullptr;
+        //Build the subtrees
+        root->NE = this->buildTree(imNE, k - 1);
+        delete imNE;
+        imNE = nullptr;
 
-    root->NW = buildTree(imNW, k-1);
-    delete imNW;
-    imNW = nullptr;
+        root->NW = buildTree(imNW, k - 1);
+        delete imNW;
+        imNW = nullptr;
 
-    root->SE = buildTree(imSE, k-1);
-    delete imSE;
-    imSE = nullptr;
+        root->SE = buildTree(imSE, k - 1);
+        delete imSE;
+        imSE = nullptr;
 
-    root->SW = buildTree(imSW, k-1);
-    delete imSW;
-    imSW = nullptr;
+        root->SW = buildTree(imSW, k - 1);
+        delete imSW;
+        imSW = nullptr;
+    } else {
+        delete rootIm;
+        rootIm = nullptr;
+        root->NE = nullptr;
+        root->NW = nullptr;
+        root->SW = nullptr;
+        root->SE = nullptr;
+    }
 }
 
 int toqutree::size() {
@@ -171,30 +180,30 @@ toqutree::Node * toqutree::buildTree(PNG * im, int k) {
 }
 
 PNG toqutree::render(){
-    PNG* im = render_helper(root);
-    return *im;
+    PNG im = render_helper(root);
+    return im;
 }
 
-PNG* toqutree::render_helper(Node* node) {
+PNG toqutree::render_helper(Node* node) {
     //Check if it is a leaf - this is a complete tree so if one child is null, they all are
     if (node->NE == nullptr) {
         auto width = static_cast<unsigned int>(pow(2,node->dimension));
         auto height = static_cast<unsigned int>(pow(2,node->dimension));
 
-        PNG* subIm = new PNG(width, height);
+        PNG subIm(width, height);
 
         for (unsigned int i = 0; i < width; i++) {
             for (unsigned int j = 0; j < height; j++) {
-                *(subIm->getPixel(i, j)) = node->avg;
+                *(subIm.getPixel(i, j)) = node->avg;
             }
         }
         return subIm;
     } else {
         //Find the four sub images belonging to the children
-        PNG* neIm = render_helper(node->NE);
-        PNG* nwIm = render_helper(node->NW);
-        PNG* seIm = render_helper(node->SE);
-        PNG* swIm = render_helper(node->SW);
+        PNG neIm = render_helper(node->NE);
+        PNG nwIm = render_helper(node->NW);
+        PNG seIm = render_helper(node->SE);
+        PNG swIm = render_helper(node->SW);
 
         auto width = static_cast<unsigned int>(pow(2,node->dimension));
         auto height = static_cast<unsigned int>(pow(2,node->dimension));
@@ -210,26 +219,26 @@ PNG* toqutree::render_helper(Node* node) {
         pair<int,int> nwul((centre.first+newDim)%dim,(centre.second+newDim)%dim);
 
         //Stitch together children's images into a single image
-        PNG* subIm = new PNG(width, height);
+        PNG subIm(width, height);
         stitch(seul, dim, seIm, subIm);
         stitch(swul, dim, swIm, subIm);
         stitch(neul, dim, neIm, subIm);
         stitch(nwul, dim, nwIm, subIm);
 
-        delete seIm;
-        seIm = nullptr;
-        delete swIm;
-        swIm = nullptr;
-        delete neIm;
-        neIm = nullptr;
-        delete nwIm;
-        nwIm = nullptr;
+//        delete seIm;
+//        seIm = nullptr;
+//        delete swIm;
+//        swIm = nullptr;
+//        delete neIm;
+//        neIm = nullptr;
+//        delete nwIm;
+//        nwIm = nullptr;
 
         return subIm;
     }
 }
 
-void toqutree::stitch(pair<int,int> ul, int dim, PNG* childIm, PNG*& parentIm) {
+void toqutree::stitch(pair<int,int> ul, int dim, PNG& childIm, PNG& parentIm) {
     unsigned int xCount = 0;
     int newDim = dim / 2;
 
@@ -241,7 +250,7 @@ void toqutree::stitch(pair<int,int> ul, int dim, PNG* childIm, PNG*& parentIm) {
         for (int y = ul.second; y < ul.second + newDim; y++) {
 
             auto yy = static_cast<unsigned int>(y % dim);
-            *(parentIm->getPixel(xx, yy)) = *(childIm->getPixel(xCount,yCount));
+            *(parentIm.getPixel(xx, yy)) = *(childIm.getPixel(xCount,yCount));
             yCount++;
 
         }
@@ -253,6 +262,23 @@ void toqutree::stitch(pair<int,int> ul, int dim, PNG* childIm, PNG*& parentIm) {
 void toqutree::prune(double tol){
     prune_helper(root,tol);
 }
+
+//bool toqutree::prune_helper(Node*& node, double tol) {
+//    if (shouldPrune(node, tol, node->avg)) {
+//        clear(node);
+//    } else {
+//        prune_helper(node->NE, tol);
+//        prune_helper(node->NW, tol);
+//        prune_helper(node->SW, tol);
+//        prune_helper(node->SE, tol);
+//    }
+//}
+//bool toqutree::shouldPrune(Node*& node, double tol, HSLAPixel& avg) {
+//    if (node->NE == nullptr) //We are at a leaf
+//        return avg.dist(node->avg) < tol;
+//    return shouldPrune(node->NE, tol, avg) and shouldPrune(node->NW, tol, avg) and shouldPrune(node->SE, tol, avg) and shouldPrune(node->SW, tol, avg);
+//
+//}
 
 bool toqutree::prune_helper(Node*& node, double tol) {
     if (node == nullptr or node->NE == nullptr) return false;
@@ -269,7 +295,7 @@ bool toqutree::prune_helper(Node*& node, double tol) {
         psw = prune_helper(node->SW, tol);
     } else { //The children are leaves
         //If the children (all of which are leaves) are all within tolerance, delete them all
-        if (abs(a.dist(node->NE->avg)) <= tol and abs(a.dist(node->NW->avg)) <= tol and abs(a.dist(node->SE->avg)) <= tol and abs(a.dist(node->SW->avg)) <= tol) {
+        if (abs(a.dist(node->NE->avg)) < tol and abs(a.dist(node->NW->avg)) < tol and abs(a.dist(node->SE->avg)) < tol and abs(a.dist(node->SW->avg)) < tol) {
             delete node->NE;
             delete node->NW;
             delete node->SE;
@@ -286,7 +312,7 @@ bool toqutree::prune_helper(Node*& node, double tol) {
 
     //On the way back out, check if node's children are now leaves
     if (pne and pnw and pse and psw) {
-        if (abs(a.dist(node->NE->avg)) <= tol and abs(a.dist(node->NW->avg)) <= tol and abs(a.dist(node->SE->avg)) <= tol and abs(a.dist(node->SW->avg)) <= tol) {
+        if (abs(a.dist(node->NE->avg)) < tol and abs(a.dist(node->NW->avg)) < tol and abs(a.dist(node->SE->avg)) < tol and abs(a.dist(node->SW->avg)) < tol) {
             delete node->NE;
             delete node->NW;
             delete node->SE;
